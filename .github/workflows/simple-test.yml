@@ -1,0 +1,14 @@
+name: Simple Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello World
+        run: |
+          echo "Test simple"
+          date
+          echo "Ceci devrait fonctionner !"

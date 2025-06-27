@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Permet de déclencher manuellement
 
 permissions:
-  contents: write
+  contents: read  # Permission minimale
   actions: read
 
 jobs:
@@ -22,7 +22,6 @@ jobs:
           echo "Branch: ${{ github.ref }}"
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
       - name: Configure Git
         run: |
@@ -30,9 +29,12 @@ jobs:
           git config --global user.email 'action@github.com'
       - name: Make script executable
         run: chmod +x ./health-check.sh
-      - name: Run Health Check
+      - name: Run Health Check (without commit)
         id: shell_script_run
-        run: bash ./health-check.sh
+        run: |
+          # Modifier le script pour ne pas faire de commit automatique
+          export commit=false
+          bash ./health-check.sh
       - name: Show logs (for debugging)
         run: |
           echo "=== Logs directory ==="
