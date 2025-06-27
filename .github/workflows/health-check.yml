@@ -6,14 +6,24 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch: # Permet de déclencher manuellement
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   health_check_job:
     runs-on: ubuntu-latest
     name: Check all sites
     steps:
+      - name: Debug info
+        run: |
+          echo "Workflow triggered by: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
       - name: Configure Git
         run: |
           git config --global user.name 'Health Check Bot'
