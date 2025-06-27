@@ -4,40 +4,13 @@ name: Scheduled Health Check
 on:
   schedule:
     - cron: "*/5 * * * *"
-  workflow_dispatch: # Permet de déclencher manuellement
-
-permissions:
-  contents: read  # Permission minimale
-  actions: read
 
 jobs:
   health_check_job:
     runs-on: ubuntu-latest
     name: Check all sites
     steps:
-      - name: Debug info
-        run: |
-          echo "Workflow triggered by: ${{ github.event_name }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Branch: ${{ github.ref }}"
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Configure Git
-        run: |
-          git config --global user.name 'Health Check Bot'
-          git config --global user.email 'action@github.com'
-      - name: Make script executable
-        run: chmod +x ./health-check.sh
-      - name: Run Health Check (without commit)
+      - uses: actions/checkout@v2
+      - name: Run Shell Script
         id: shell_script_run
-        run: |
-          # Modifier le script pour ne pas faire de commit automatique
-          export commit=false
-          bash ./health-check.sh
-      - name: Show logs (for debugging)
-        run: |
-          echo "=== Logs directory ==="
-          ls -la logs/ || echo "No logs directory found"
-          echo "=== Recent logs ==="
-          find logs -name "*.log" -exec tail -5 {} \; || echo "No log files found"
+        run: bash ./health-check.sh
