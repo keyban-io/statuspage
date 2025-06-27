@@ -12,6 +12,20 @@ jobs:
     name: Check all sites
     steps:
       - uses: actions/checkout@v2
-      - name: Run Shell Script
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure Git
+        run: |
+          git config --global user.name 'Health Check Bot'
+          git config --global user.email 'action@github.com'
+      - name: Make script executable
+        run: chmod +x ./health-check.sh
+      - name: Run Health Check
         id: shell_script_run
         run: bash ./health-check.sh
+      - name: Show logs (for debugging)
+        run: |
+          echo "=== Logs directory ==="
+          ls -la logs/ || echo "No logs directory found"
+          echo "=== Recent logs ==="
+          find logs -name "*.log" -exec tail -5 {} \; || echo "No log files found"
