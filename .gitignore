@@ -1,1 +1,5 @@
 logs
+.env
+.aider.chat.*
+.aider.tags.*
+.aider.input.*
