@@ -1,8 +1,13 @@
-# In the original repository we'll just print the result of status checks,
-# without committing. This avoids generating several commits that would make
-# later upstream merges messy for anyone who forked us.
-commit=true
-origin=$(git remote get-url origin)
+# By default do not commit health-check results. To enable committing pass --commit
+# on the command-line or set the COMMIT environment variable to "true".
+# We still disable commits when the git origin is the upstream statsig-io/statuspage repo.
+commit=false
+# Enable commit if user passed --commit or COMMIT=true
+if [[ "$1" == "--commit" ]] || [[ "${COMMIT}" == "true" ]]
+then
+  commit=true
+fi
+origin=$(git remote get-url origin 2>/dev/null || true)
 if [[ $origin == *statsig-io/statuspage* ]]
 then
   commit=false
