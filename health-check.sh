@@ -13,12 +13,19 @@ URLSARRAY=()
 
 urlsConfig="./urls.cfg"
 echo "Reading $urlsConfig"
-while read -r line
+while read -r line || [ -n "$line" ]
 do
-  echo "  $line"
-  IFS='=' read -ra TOKENS <<< "$line"
-  KEYSARRAY+=(${TOKENS[0]})
-  URLSARRAY+=(${TOKENS[1]})
+  # Trim leading/trailing whitespace
+  trimmed="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  # Skip empty lines and comments
+  [ -z "$trimmed" ] && continue
+  case "$trimmed" in \#*) continue ;; esac
+  echo "  $trimmed"
+  # Split on the first '=' into key and value (keeps values that contain '=')
+  key="${trimmed%%=*}"
+  value="${trimmed#*=}"
+  KEYSARRAY+=("$key")
+  URLSARRAY+=("$value")
 done < "$urlsConfig"
 
 echo "***********************"
@@ -44,24 +51,32 @@ do
   # Normalize base URL (remove trailing slash)
   base_url="${url%/}"
 
-  # For the api service probe both /health/live and /health/ready (require BOTH to be healthy); otherwise probe the /health endpoint on other services
+  # For the api service probe both /health/live and /health/ready (require BOTH to be healthy);
+  # for other services probe the /health endpoint.
   if [ "$key" = "api" ]; then
     endpoints=("/health/live" "/health/ready")
 
-    # Require all endpoints to be healthy (AND logic)
+    # Require all endpoints to be healthy (AND logic). For robustness try each endpoint
+    # both with and without a trailing slash and accept 200/202/204/3xx as success.
     result="success"
     for endpoint in "${endpoints[@]}"
     do
-      full_url="$base_url$endpoint"
       endpoint_ok="failed"
-      for i in 1 2 3 4;
+      for suffix in "" "/"
       do
-        response=$(curl --write-out '%{http_code}' --silent --output /dev/null "$full_url")
-        if [ "$response" -eq 200 ] || [ "$response" -eq 202 ] || [ "$response" -eq 301 ] || [ "$response" -eq 302 ] || [ "$response" -eq 307 ]; then
-          endpoint_ok="success"
-          break
-        fi
-        sleep 5
+        full_url="$base_url$endpoint$suffix"
+        found="no"
+        for i in 1 2 3 4;
+        do
+          response=$(curl --write-out '%{http_code}' --silent --output /dev/null --max-time 10 "$full_url")
+          if [ "$response" -eq 200 ] || [ "$response" -eq 202 ] || [ "$response" -eq 204 ] || [ "$response" -eq 301 ] || [ "$response" -eq 302 ] || [ "$response" -eq 307 ]; then
+            endpoint_ok="success"
+            found="yes"
+            break
+          fi
+          sleep 5
+        done
+        [ "$found" = "yes" ] && break
       done
       # If any endpoint failed after retries, mark overall result failed and stop
       if [ "$endpoint_ok" != "success" ]; then
@@ -69,26 +84,43 @@ do
         break
       fi
     done
+
+    # If api failed, emit short diagnostics to help identify why (prints HTTP codes)
+    if [ "$result" != "success" ]; then
+      echo "    [debug] api check failed; diagnostic HTTP status codes:"
+      for endpoint in "${endpoints[@]}"
+      do
+        for suffix in "" "/"
+        do
+          full_url="$base_url$endpoint$suffix"
+          code=$(curl --write-out '%{http_code}' --silent --output /dev/null --max-time 10 "$full_url")
+          echo "    [debug] $full_url -> $code"
+        done
+      done
+    fi
   else
     endpoints=("/health")
 
     result="failed"
     for endpoint in "${endpoints[@]}"
     do
-      full_url="$base_url$endpoint"
-      for i in 1 2 3 4;
+      found="no"
+      for suffix in "" "/"
       do
-        response=$(curl --write-out '%{http_code}' --silent --output /dev/null "$full_url")
-        if [ "$response" -eq 200 ] || [ "$response" -eq 202 ] || [ "$response" -eq 301 ] || [ "$response" -eq 302 ] || [ "$response" -eq 307 ]; then
-          result="success"
-        else
-          result="failed"
-        fi
-        if [ "$result" = "success" ]; then
-          break
-        fi
-        sleep 5
+        full_url="$base_url$endpoint$suffix"
+        for i in 1 2 3 4;
+        do
+          response=$(curl --write-out '%{http_code}' --silent --output /dev/null --max-time 10 "$full_url")
+          if [ "$response" -eq 200 ] || [ "$response" -eq 202 ] || [ "$response" -eq 204 ] || [ "$response" -eq 301 ] || [ "$response" -eq 302 ] || [ "$response" -eq 307 ]; then
+            result="success"
+            found="yes"
+            break
+          fi
+          sleep 5
+        done
+        [ "$found" = "yes" ] && break
       done
+      [ "$result" = "success" ] && break
     done
   fi
 
