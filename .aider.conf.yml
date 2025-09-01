@@ -79,10 +79,13 @@ model: gpt-5-mini-2025-08-07
 ## Add a model alias (can be used multiple times)
 #alias: xxx
 ## Specify multiple values like this:
-#alias:
-#  - xxx
-#  - yyy
-#  - zzz
+alias:
+  - sonnet4:claude-sonnet-4-20250514
+  - sonnet37:claude-3-7-sonnet-20250219
+  - opus4_1:claude-opus-4-1-20250805
+  - mini:gpt-5-mini-2025-08-07
+  - gpt5:gpt-5-2025-08-07
+  - haiku35:claude-3-5-haiku-latest
 
 ## Set the reasoning_effort API parameter (default: not set)
 reasoning-effort: "medium"
