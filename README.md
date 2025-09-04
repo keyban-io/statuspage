@@ -24,4 +24,4 @@ Provider | Status page | Services
  Apple | https://www.apple.com/fr/support/systemstatus/ | Apple Pass
  Google | N/A | Google Wallet
  OVH | https://www.status-ovhcloud.com/ | Domain
-
+Zelty | https://zelty.statuspage.io/
