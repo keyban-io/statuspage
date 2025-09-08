@@ -8,9 +8,6 @@
 
 ## 3rd party providers
 
-### Alchemy
-
-
 Provider | Status page | Services
 ---------|----------|---------
  Alchemy | https://status.alchemy.com/ | Starknet Mainnet, Starknet Sepolia, Polygon Amoy
