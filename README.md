@@ -22,3 +22,5 @@
 | Google    | N/A                                              | Google Wallet                                    |
 | OVH       | <https://www.status-ovhcloud.com/>               | Domain                                           |
 | Zelty     | <https://zelty.statuspage.io/>                   |                                                  |
+| Stellar   | <https://status.stellar.org/>                    | Stellar Mainnet, Stellar Testnet                 |
+| Starknet  | <https://status.starknet.io/>                    | Starknet Mainnet, Starknet Sepolia               |
