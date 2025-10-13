@@ -1,35 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Function to display help
-show_help() {
-  cat << EOF
-Usage: $0 [OPTIONS]
-
-Health check script for monitoring service endpoints.
-
-OPTIONS:
-  --help      Show this help message
-  --commit    Enable saving results to Git
-              (can also be enabled with COMMIT=true)
-
-DESCRIPTION:
-  This script checks the health of services listed in urls.cfg.
-  By default, results are displayed but not saved.
-  
-  For 'api' services, checks the /health/ready endpoint
-  For other services, checks the /health endpoint
-  
-  Logs are saved in the logs/ directory with automatic rotation.
-
-EXAMPLES:
-  $0                    # Run health checks without saving
-  $0 --commit          # Run and save to Git
-  COMMIT=true $0       # Alternative way to enable saving
-
-EOF
-}
-
 # By default do not commit health-check results. To enable committing pass --commit
 # on the command-line or set the COMMIT environment variable to "true".
 # We still disable commits when the git origin is the upstream statsig-io/statuspage repo.
@@ -56,63 +27,18 @@ URLSARRAY=()
 
 urlsConfig="./urls.cfg"
 echo "Reading $urlsConfig"
-while read -r line || [ -n "$line" ]
+while read -r line
 do
-  # Trim leading/trailing whitespace
-  trimmed="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-  # Skip empty lines and comments
-  [ -z "$trimmed" ] && continue
-  case "$trimmed" in \#*) continue ;; esac
-  echo "  $trimmed"
-  # Split on the first '=' into key and value (keeps values that contain '=')
-  key="${trimmed%%=*}"
-  value="${trimmed#*=}"
-  KEYSARRAY+=("$key")
-  URLSARRAY+=("$value")
+  echo "  $line"
+  IFS='=' read -ra TOKENS <<< "$line"
+  KEYSARRAY+=(${TOKENS[0]})
+  URLSARRAY+=(${TOKENS[1]})
 done < "$urlsConfig"
 
 echo "***********************"
 echo "Starting health checks with ${#KEYSARRAY[@]} configs:"
 
-# Function to check URL health
-check_url_health() {
-  local base_url="$1"
-  local endpoints=("${@:2}")
-  local result="failed"
-  
-  for endpoint in "${endpoints[@]}"; do
-    local found="no"
-    for suffix in "" "/"; do
-      local full_url="$base_url$endpoint$suffix"
-      for attempt in 1 2 3 4; do
-        local response
-        response=$(curl --write-out '%{http_code}' --silent --output /dev/null --max-time 10 "$full_url")
-        if [[ "$response" =~ ^(200|202|204|301|302|307)$ ]]; then
-          result="success"
-          found="yes"
-          break
-        fi
-        # Only sleep between attempts, not after the last one
-        [[ "$attempt" -lt 4 ]] && sleep 5
-      done
-      [[ "$found" == "yes" ]] && break
-    done
-    [[ "$result" == "success" ]] && break
-  done
-  
-  echo "$result"
-}
-
 mkdir -p logs
-
-# Ensure each monitored service has a log file so the frontend can show "No Data" instead of 404.
-for key in "${KEYSARRAY[@]}"
-do
-  file="logs/${key}_report.log"
-  if [ ! -f "$file" ]; then
-    echo "$(date +'%Y-%m-%d %H:%M'), nodata" > "$file"
-  fi
-done
 
 for (( index=0; index < ${#KEYSARRAY[@]}; index++))
 do
@@ -120,26 +46,19 @@ do
   url="${URLSARRAY[index]}"
   echo "  $key=$url"
 
-  # Normalize base URL (remove trailing slash)
-  base_url="${url%/}"
-
-  # Determine endpoints based on service type
-  if [[ "$key" == "api" ]]; then
-    result=$(check_url_health "$base_url" "/health/ready")
-    
-    # If api failed, emit diagnostics
-    if [[ "$result" != "success" ]]; then
-      echo "    [debug] api check failed; diagnostic HTTP status codes:"
-      for suffix in "" "/"; do
-        full_url="$base_url/health/ready$suffix"
-        code=$(curl --write-out '%{http_code}' --silent --output /dev/null --max-time 10 "$full_url")
-        echo "    [debug] $full_url -> $code"
-      done
+  for i in 1 2 3 4; 
+  do
+    response=$(curl --write-out '%{http_code}' --silent --output /dev/null $url -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7')
+    if [ "$response" -eq 200 ] || [ "$response" -eq 202 ] || [ "$response" -eq 301 ] || [ "$response" -eq 302 ] || [ "$response" -eq 307 ]; then
+      result="success"
+    else
+      result="failed"
     fi
-  else
-    result=$(check_url_health "$base_url" "/health")
-  fi
-
+    if [ "$result" = "success" ]; then
+      break
+    fi
+    sleep 5
+  done
   dateTime=$(date +'%Y-%m-%d %H:%M')
   if [[ $commit == true ]]
   then
@@ -151,17 +70,9 @@ do
   fi
 done
 
-if [[ $commit == true ]]; then
-  # Let's make Vijaye the most productive person on GitHub.
-  git config --global user.name 'Vijaye Raji'
-  git config --global user.email 'vijaye@statsig.com'
+if [[ $commit == true ]]
+then
   git add -A --force logs/
-  
-  # Only commit if there are changes
-  if ! git diff --cached --quiet; then
-    git commit -m '[Automated] Update Health Check Logs'
-    git push
-  else
-    echo "No changes to commit"
-  fi
+  git commit -am '[Automated] Update Health Check Logs'
+  git push
 fi
