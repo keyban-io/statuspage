@@ -8,7 +8,7 @@ on:
 
 jobs:
   health_check_job:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     name: Check all sites
     steps:
       - uses: actions/checkout@v2
