@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a static status page for monitoring Keyban services. It's a fork of Statsig's Open-Source Status Page that displays real-time health status for multiple services including:
 
 - Website, admin portal, docs, and loyalty demo
-- Backend API and SubQL indexers (Starknet, Stellar)
+- Backend API and SubQL indexers (Base, Stellar, XDC)
 
 The status page is entirely static (HTML/CSS/vanilla JavaScript) with automated health checks that run via GitHub Actions every 15 minutes.
 
@@ -59,7 +59,7 @@ tail -F logs/*.log
 2. Performs up to 4 curl attempts per service (with 5s delays)
 3. Considers HTTP 200, 202, 301, 302, 307 as success
 4. Logs results to `logs/{key}_report.log` (format: `YYYY-MM-DD HH:MM, success|failed`)
-5. Keeps last 2000 log entries per service
+5. Keeps last 3000 log entries per service
 6. Auto-commits when `--commit` flag is used (disabled for upstream statsig-io/statuspage)
 
 **GitHub Actions**: `.github/workflows/health-check.yml` runs `health-check.sh --commit` every 15 minutes
@@ -124,7 +124,7 @@ if [ "$response" -eq 200 ] || [ "$response" -eq 202 ] ...
 ### Changing Display Parameters
 
 - **Days displayed**: Modify `maxDays` in index.js:1 (default: 30)
-- **Log retention**: Modify tail value in health-check.sh:67 (default: 2000 entries)
+- **Log retention**: Modify tail value in health-check.sh:67 (default: 3000 entries)
 - **Check frequency**: Modify cron in .github/workflows/health-check.yml:6 (default: `*/15 * * * *`)
 
 ## Testing

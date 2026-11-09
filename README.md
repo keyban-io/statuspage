@@ -10,8 +10,8 @@
 
 | Provider  | Status page                                      | Services                                         |
 | --------- | ------------------------------------------------ | ------------------------------------------------ |
-| Alchemy   | <https://status.alchemy.com/>                    | Starknet Mainnet, Starknet Sepolia, Polygon Amoy |
-| Blast API | <https://status.blastapi.io/>                    | Starknet Mainnet, Starknet Sepolia, Polygon Amoy |
+| Alchemy   | <https://status.alchemy.com/>                    | Polygon Amoy                                     |
+| Blast API | <https://status.blastapi.io/>                    | Polygon Amoy                                     |
 | Nodies    | N/A                                              | Stellar Testnet, Stellar Mainnet                 |
 | Github    | <https://www.githubstatus.com/>                  |                                                  |
 | Docker    | <https://www.dockerstatus.com/>                  |                                                  |
@@ -23,4 +23,3 @@
 | OVH       | <https://www.status-ovhcloud.com/>               | Domain                                           |
 | Zelty     | <https://zelty.statuspage.io/>                   |                                                  |
 | Stellar   | <https://status.stellar.org/>                    | Stellar Mainnet, Stellar Testnet                 |
-| Starknet  | <https://status.starknet.io/>                    | Starknet Mainnet, Starknet Sepolia               |
